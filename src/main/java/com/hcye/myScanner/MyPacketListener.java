@@ -11,17 +11,17 @@ import org.pcap4j.packet.TcpPacket;
 import org.pcap4j.packet.namednumber.ArpOperation;
 import org.pcap4j.packet.namednumber.TcpPort;
 
-import java.io.EOFException;
+import com.hcye.myScanner.inter.PacketBuilder;
+
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 public class MyPacketListener {
 	private int counter=0;
-    public Set<String> lisener(String dstip, PcapNetworkInterface nif,List<PacketBuilder> builder) throws PcapNativeException {
+    public Set<String> lisener(String dstip, PcapNetworkInterface nif,List<PacketBuilder> builder) throws PcapNativeException{
     	Pcap4JTools tools = new Pcap4JTools(dstip);
         String srcip = Pcap4JTools.getIpByNif(nif);
         Set<String> set = new HashSet<>();
@@ -30,7 +30,7 @@ public class MyPacketListener {
     	            .snaplen(65536)
     	            .promiscuousMode(PromiscuousMode.PROMISCUOUS)
     	            .timeoutMillis(10)
-    	            .bufferSize(1024*1024);
+    	            .bufferSize(1024*1024*10);
     	    PcapHandle sendHandler=handleBuilder.build();
       
         String ipHead =tools.getIphead();
@@ -66,8 +66,8 @@ public class MyPacketListener {
 						}
 			    	}
 					
-				}else if (b.getClass().getSimpleName().equals("BuildIcmpPacket")) {
-					if(packet.contains(IcmpV4EchoReplyPacket.class)) {
+				}else if (b.getClass().getSimpleName().equals("BuildIcmpPacket")||b.getClass().getSimpleName().equals("BuildTimeStampPacket")) {
+					if(packet.contains(IcmpV4EchoReplyPacket.class)||packet.contains(IcmpV4TimestampReplyPacket.class)) {
 						IpV4Packet icmpreply=packet.get(IpV4Packet.class);
 						/**
 						 *	转换成IPv4包进行判断
@@ -99,23 +99,6 @@ public class MyPacketListener {
 						}
 						}
 						}
-				}else if(b.getClass().getSimpleName().equals("BuildTimeStampPacket")) {
-					if(packet.contains(IcmpV4TimestampReplyPacket.class)) {
-						IpV4Packet timestamp=packet.get(IpV4Packet.class);
-						/**
-						 * 	转换成IPv4包进行判断
-						 *	 Convert to ipv4 packet to judge 
-						 * 
-						 * */
-						 counter++;
-						 for (int i =tools.getStart(); i <= tools.getEnd(); i++) {
-			                    if (timestamp.getHeader().getSrcAddr().getHostAddress().equals(ipHead + i) && timestamp.getHeader().getDstAddr().getHostAddress().equals(srcip)) {
-			                        set.add(ipHead + i);
-			                    }
-			    	}
-					
-				}
-				
 				}
 				}
 			    if(counter>=scanIpCount) {

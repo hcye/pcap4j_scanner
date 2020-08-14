@@ -1,9 +1,6 @@
 package com.hcye.myScanner;
-
-
 import org.pcap4j.core.PcapAddress;
 import org.pcap4j.core.PcapNetworkInterface;
-
 public class Pcap4JTools { 
    private  int start;
    private  int end;

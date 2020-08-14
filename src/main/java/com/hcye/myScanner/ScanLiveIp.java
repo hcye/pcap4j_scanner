@@ -3,6 +3,7 @@ package com.hcye.myScanner;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -14,20 +15,33 @@ import java.util.concurrent.Future;
 import org.pcap4j.core.PcapNativeException;
 import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.core.Pcaps;
+import org.pcap4j.packet.namednumber.TcpPort;
+
+import com.hcye.myScanner.inter.PacketBuilder;
 
 public class ScanLiveIp {
 	/*
 	 * String dstIp="10.75.70.1/24"; //目标网段 String gateway="10.75.60.1"; //网关 String
 	 * myInterIp="10.75.60.155";//我的网卡地址
 	 */	
-	public void scan(String dstIp,String gateway,String myInterIp) throws UnknownHostException, PcapNativeException {
-		long i=System.currentTimeMillis();
+	public Set<String> scan(String dstIp,String gateway,String myInterIp) throws UnknownHostException, PcapNativeException {
 		PcapNetworkInterface nif=Pcaps.getDevByAddress(InetAddress.getByName(myInterIp));
 		Pcap4JTools tools=new Pcap4JTools(dstIp);
 		Future<Set<String>> f=null;
 		ExecutorService soonPool=Executors.newCachedThreadPool();
 		ExecutorService fatherPool=Executors.newCachedThreadPool();
 		List<PacketBuilder> builders=new ArrayList<PacketBuilder>();
+		TcpPort dstPort=TcpPort.getInstance((short) 443);
+		TcpPort[] srcPorts=new TcpPort[5];
+		
+		/**
+		 * 构造一个64800-65100之间的随机5位数组,用于充当源端口
+		 * */
+		for(int j=0;j<5;j++) {
+			short shortDstPort= (short) (Math.random()*300+64800);
+			srcPorts[j]=TcpPort.getInstance(shortDstPort);
+		}
+		
 		/**
 		 * 判断是否是同一个网段
 		 * 此处默认按照 24位掩码判断，对于自身广播域掩码小于24位时会出现部分地址扫描不到的情况，可以对 所有目标地址广播arp请求，如果返回则认定同一网段。
@@ -35,12 +49,12 @@ public class ScanLiveIp {
 		 * 
 		 * */
 		if(tools.isDifferentVlan(dstIp, gateway)) {
-			PacketBuilder arpBuilder = new BuildArpPacket(nif);
+			PacketBuilder arpBuilder = (PacketBuilder) new BuildArpPacket(nif);
 			builders.add(arpBuilder);
 		}else {
 			PacketBuilder icmpBuilder=new BuildIcmpPacket(nif);
-			PacketBuilder timstamp=new BuildTimeStampPacket(nif);
-			PacketBuilder synPacket=new BuildSynpacket(nif);
+			PacketBuilder timstamp=(PacketBuilder) new BuildTimeStampPacket(nif);
+			PacketBuilder synPacket=new BuildSynpacket(nif,dstPort,srcPorts[(int)Math.random()*4]);
 			builders.add(icmpBuilder);
 			builders.add(timstamp);
 			builders.add(synPacket);
@@ -54,25 +68,23 @@ public class ScanLiveIp {
 			fatherPool.execute(t1);
 		}
 		
-		
+		Set<String> s=new HashSet<String>();
 		try {
-			Set<String> s=f.get();
+			s=f.get();
 			if(tools.isDifferentVlan(dstIp, gateway)) {
 				s.add(myInterIp);
 				s.add(gateway);
+				return s;
 			}
-			for(String str:s) {
-				System.out.println(str);
-			}
-			System.out.println(s.size()+" hosts up");
+			
 		} catch (InterruptedException | ExecutionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}finally {
 			soonPool.shutdownNow();
 			fatherPool.shutdownNow();
-			System.out.print("scanned in "+((System.currentTimeMillis()-i)/1000.00)+" seconds");
 		}
+		return s;
 	}
 	
 	
@@ -88,13 +100,12 @@ private class task implements Callable<Set<String>>{
 		this.builder=builder;
 	}
 	@Override
-	public Set call() throws Exception {
+	public Set<String> call() throws Exception {
 		// TODO Auto-generated method stub
 		MyPacketListener listener=new MyPacketListener();
 		Set<String> set=listener.lisener(dstip, nif, builder);
 		return set;
 	}
-	
 }
 private class task1 implements Runnable{
 //	nif, dstIp,gateway, pool,icmpBuilder

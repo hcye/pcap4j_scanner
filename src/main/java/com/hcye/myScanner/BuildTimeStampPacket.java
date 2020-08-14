@@ -19,6 +19,8 @@ import org.pcap4j.packet.namednumber.IpNumber;
 import org.pcap4j.packet.namednumber.IpVersion;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.inter.PacketBuilder;
+
 public class BuildTimeStampPacket implements PacketBuilder {
     private final IcmpV4TimestampPacket packet;
     private final short identifier;

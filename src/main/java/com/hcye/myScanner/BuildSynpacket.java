@@ -16,6 +16,8 @@ import org.pcap4j.packet.namednumber.IpVersion;
 import org.pcap4j.packet.namednumber.TcpPort;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.inter.PacketBuilder;
+
 
 public class BuildSynpacket implements PacketBuilder {
     private final TcpPort srcPort;
@@ -30,11 +32,11 @@ public class BuildSynpacket implements PacketBuilder {
     private final String srcMac;
     private final String srcIp;
 
-    public BuildSynpacket( PcapNetworkInterface nif)  {
+    public BuildSynpacket( PcapNetworkInterface nif,TcpPort dstPort,TcpPort srcPort)  {
         this.srcIp = Pcap4JTools.getIpByNif(nif);
         this.srcMac = Pcap4JTools.getMacByNif(nif);
-        this.srcPort = TcpPort.getInstance((short) ((short) 30000 + Math.random() * 20000));
-        this.dstPort = TcpPort.getInstance((short) 443);
+        this.srcPort = srcPort;
+        this.dstPort = dstPort;
         this.sequenceNumber = (short) ((short) 20000 + Math.random() * 20000);
         this.dataOffset = 0;
         this.syn = true;

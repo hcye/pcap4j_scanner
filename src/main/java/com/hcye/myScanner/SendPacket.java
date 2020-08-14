@@ -10,6 +10,8 @@ import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.core.PcapNetworkInterface.PromiscuousMode;
 import org.pcap4j.packet.Packet;
 
+import com.hcye.myScanner.inter.PacketBuilder;
+
 public class SendPacket {
 	private final String dstIP;
 	private final String gateway;

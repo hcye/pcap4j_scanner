@@ -9,6 +9,8 @@ import org.pcap4j.packet.namednumber.EtherType;
 import org.pcap4j.util.ByteArrays;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.inter.PacketBuilder;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -23,7 +25,6 @@ public class BuildArpPacket implements PacketBuilder {
     public Packet getPacket() {
         return null;
     }
-
     @Override
     public Packet getWholePacket(String dstIp, String dstMac) {
         ArpPacket.Builder arpBuilder = new ArpPacket.Builder();
@@ -49,8 +50,6 @@ public class BuildArpPacket implements PacketBuilder {
                 .type(EtherType.ARP)
                 .payloadBuilder(arpBuilder)
                 .paddingAtBuild(true);
-
-
         return   etherBuilder.build();
     }
 
