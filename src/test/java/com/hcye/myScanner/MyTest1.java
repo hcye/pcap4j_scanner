@@ -9,6 +9,7 @@ public class MyTest1 {
 		String gateway="10.75.60.1";  //网关 gateway
 		String myInterIp="10.75.60.155";//我的网卡地址 My network card address 
 		ScanLiveIp scan=new ScanLiveIp();
+		
 		ShowIpScanResult.show(scan.scan(dstIp, gateway, myInterIp));
 	}
 }

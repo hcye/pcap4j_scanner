@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Set;
 
 public class ShowIpScanResult {
-	public static void show(Set<String> s) {
+	public static <T> void show(Set<String> s) {
 		List<Ip> list=new ArrayList<Ip>();
 		for (String str:s) {
 			list.add(new Ip(str));
 		}
-		Collections.sort(list);
+		Collections.sort(list, new Ip("123"));
 		for(String str:list) {
 			System.out.println(str+" alive");
 		}
