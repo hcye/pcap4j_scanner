@@ -1,4 +1,4 @@
-package com.hcye.myScanner;
+package com.hcye.myScanner.packetBuilder;
 import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.packet.ArpPacket;
 import org.pcap4j.packet.EthernetPacket;
@@ -9,6 +9,7 @@ import org.pcap4j.packet.namednumber.EtherType;
 import org.pcap4j.util.ByteArrays;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.Pcap4JTools;
 import com.hcye.myScanner.inter.PacketBuilder;
 
 import java.net.InetAddress;

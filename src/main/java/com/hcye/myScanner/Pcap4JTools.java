@@ -45,14 +45,15 @@ public String getStartIp() {
            startIp = dstip;
        }
        try {
-           Integer.parseInt(mask1);
+           int mask=Integer.parseInt(mask1);
+           if(mask<24||mask>32) {
+        	   throw new RuntimeException("只支持24-32位掩码");
+           }
        } catch (NumberFormatException e) {
-    	   System.out.print("----");
-           return;
+    	   throw new RuntimeException("掩码不正确");
        }
        String[] ips = startIp.split("\\.");
        if (ips.length != 4) {
-    	   System.out.print("--1--");
            return;
        }
        ipheadString=ips[0]+"."+ips[1]+"."+ips[2]+".";
@@ -95,7 +96,7 @@ public static String getMacByNif(PcapNetworkInterface nif) {
 	
 }
 
-public boolean isDifferentVlan(String dstIp,String gateway){
+public static boolean isDifferentVlan(String dstIp,String gateway){
        String[] dstIps= dstIp.split("\\.");
        String[] gateways=gateway.split("\\.");
        String dstIpHead=dstIps[0]+dstIps[1]+dstIps[2];

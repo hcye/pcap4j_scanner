@@ -1,4 +1,4 @@
-package com.hcye.myScanner;
+package com.hcye.myScanner.packetBuilder;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -19,6 +19,7 @@ import org.pcap4j.packet.namednumber.IpNumber;
 import org.pcap4j.packet.namednumber.IpVersion;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.Pcap4JTools;
 import com.hcye.myScanner.inter.PacketBuilder;
 
 public class BuildTimeStampPacket implements PacketBuilder {

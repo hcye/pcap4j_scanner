@@ -8,6 +8,14 @@ import org.pcap4j.packet.ArpPacket;
 import org.pcap4j.packet.Packet;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.packetBuilder.BuildArpPacket;
+
+
+/**
+ * 
+ * 发送arp包，解析mac地址
+ * 
+ * */
 public class SendArpRequest {
     public SendArpRequest() {
     }

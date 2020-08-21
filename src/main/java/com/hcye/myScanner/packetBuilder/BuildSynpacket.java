@@ -1,4 +1,4 @@
-package com.hcye.myScanner;
+package com.hcye.myScanner.packetBuilder;
 
 
 
@@ -16,6 +16,7 @@ import org.pcap4j.packet.namednumber.IpVersion;
 import org.pcap4j.packet.namednumber.TcpPort;
 import org.pcap4j.util.MacAddress;
 
+import com.hcye.myScanner.Pcap4JTools;
 import com.hcye.myScanner.inter.PacketBuilder;
 
 
