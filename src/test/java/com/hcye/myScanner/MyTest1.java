@@ -10,8 +10,8 @@ import org.pcap4j.core.Pcaps;
 
 import com.hcye.myScanner.scanIp.ScanLiveIp;
 import com.hcye.myScanner.scanIp.ShowIpScanResult;
-import com.hcye.myScanner.scanPort.ScanTcpPorts;
-import com.hcye.myScanner.scanPort.ShowTcpPortScanReslut;
+import com.hcye.myScanner.scanPort.ScanPorts;
+import com.hcye.myScanner.scanPort.ShowPortScanReslut;
 public class MyTest1 {
 	public static void main(String[] args) throws UnknownHostException, PcapNativeException, NotOpenException, InterruptedException {
 		scanTcpPort();
@@ -30,17 +30,17 @@ public class MyTest1 {
 		}
 	}
 	private static void scanTcpPort() throws NotOpenException, InterruptedException {
-		String dstIp="192.168.100.2/32"; //目标网段   Target segment 
+		String dstIp="172.32.0.202"; //目标网段   Target segment portType
 		String gateway="10.75.60.1";  //网关 gateway
 		String myInterIp="10.75.60.155";//我的网卡地址 My network card address 
-		int timeToRelay=4;              //数据包发送延时参数，此参数大小不代表速度快慢
-		int[] dstPortsRange= {1,10000}; //端口目标端口范围
+		int timeToRelay=0;              //数据包发送延时参数，此参数大小不代表速度快慢
+		int[] dstPortsRange= {54321,54322}; //端口目标端口范围
 		PcapNetworkInterface nif;
 		try {
 			nif = Pcaps.getDevByAddress(InetAddress.getByName(myInterIp));
-			ScanTcpPorts sc=new ScanTcpPorts(dstPortsRange, dstIp, nif, gateway,timeToRelay);
-			Set<String> res=sc.scanPort();
-			ShowTcpPortScanReslut.show(res);
+			ScanPorts sc=new ScanPorts(dstPortsRange, dstIp, nif, gateway,timeToRelay);
+			Set<String> res=sc.scanPort(SendPacket.UDP);
+			ShowPortScanReslut.show(res);
 		} catch (UnknownHostException | PcapNativeException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

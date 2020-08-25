@@ -21,8 +21,8 @@ import com.hcye.myScanner.inter.PacketBuilder;
 
 
 public class BuildSynpacket implements PacketBuilder {
-    private final TcpPort srcPort;
-    private final TcpPort dstPort;
+    private final int srcPort;
+    private final int dstPort;
     private final int sequenceNumber;
     private final byte dataOffset;
     private final boolean syn;
@@ -33,7 +33,7 @@ public class BuildSynpacket implements PacketBuilder {
     private final String srcMac;
     private final String srcIp;
 
-    public BuildSynpacket( PcapNetworkInterface nif,TcpPort dstPort,TcpPort srcPort)  {
+    public BuildSynpacket( PcapNetworkInterface nif,int dstPort,int srcPort)  {
         this.srcIp = Pcap4JTools.getIpByNif(nif);
         this.srcMac = Pcap4JTools.getMacByNif(nif);
         this.srcPort = srcPort;
@@ -46,8 +46,8 @@ public class BuildSynpacket implements PacketBuilder {
         this.options = new ArrayList<TcpPacket.TcpOption>();
         options.add(new Builder().maxSegSize((short) 1460).correctLengthAtBuild(true).build());
         TcpPacket.Builder b = new TcpPacket.Builder();
-        b.dstPort(dstPort)
-                .srcPort(srcPort)
+        b.dstPort(TcpPort.getInstance((short) dstPort))
+                .srcPort(TcpPort.getInstance((short) srcPort))
                 .sequenceNumber(sequenceNumber)
                 .dataOffset(dataOffset)
                 .syn(syn)

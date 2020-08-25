@@ -7,9 +7,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.pcap4j.core.NotOpenException;
 import org.pcap4j.core.PcapNativeException;
@@ -21,7 +18,7 @@ import com.hcye.myScanner.SendPacket;
 import com.hcye.myScanner.scanIp.ScanLiveIp;
 import com.hcye.myScanner.scanIp.ShowIpScanResult;
 
-public class ScanTcpPorts {
+public class ScanPorts {
 	private final int[] dstPorts;
 	private final PcapNetworkInterface nif;
 	private final String  dstIps;
@@ -29,7 +26,7 @@ public class ScanTcpPorts {
 	private Set<String> liveIps;
 	private Object lock;
 	private final int timeToRelay;
-	public ScanTcpPorts(int[] dstPortsRange,String  dstIps,PcapNetworkInterface nif,String gateway,int timeToRelay) {
+	public ScanPorts(int[] dstPortsRange,String  dstIps,PcapNetworkInterface nif,String gateway,int timeToRelay) {
 		this.dstIps=dstIps;
 		this.dstPorts=dstPortsRange;
 		this.nif=nif;
@@ -49,16 +46,16 @@ public class ScanTcpPorts {
 		}
 		
 	}
-	public Set<String> scanPort() throws PcapNativeException, NotOpenException, UnknownHostException, InterruptedException {
+	public Set<String> scanPort(String portType) throws PcapNativeException, NotOpenException, UnknownHostException, InterruptedException {
 		/**
 		 * 扫描线程池
 		 * */
 		this.lock=new String();
-		ExecutorService lisenerPool=Executors.newCachedThreadPool();
+		ExecutorService pool=Executors.newCachedThreadPool();
 		LisenerTask ts=new LisenerTask();
-		Future<Set<String>> lisennerFuture=lisenerPool.submit(ts);
-		SenderTask senderTask=new SenderTask();
-		lisenerPool.execute(senderTask);
+		Future<Set<String>> lisennerFuture=pool.submit(ts);
+		SenderTask senderTask=new SenderTask(portType);
+		pool.execute(senderTask);
 	    Set<String> res=null;
 		try {
 			res=lisennerFuture.get();
@@ -67,7 +64,7 @@ public class ScanTcpPorts {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}finally {
-			lisenerPool.shutdownNow();
+			pool.shutdownNow();
 		}
 		return res;
 	}
@@ -82,19 +79,25 @@ public class ScanTcpPorts {
 		
 	}
 	private class SenderTask implements Runnable{
-		
+		private final String portType;
+		public SenderTask(String portType) {
+			// TODO Auto-generated constructor stub
+			this.portType=portType;
+		}
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
 			SendPacket sendPacket=new SendPacket(nif, liveIps, gateway, dstPorts,lock,timeToRelay);
 			try {
-				sendPacket.sendSynForTcpPort();
+				sendPacket.sendPacketForPortScan(portType);
 			} catch (UnknownHostException | PcapNativeException | InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		
 	}
 	
 	/**

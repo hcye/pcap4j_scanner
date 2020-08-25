@@ -13,10 +13,13 @@ import org.pcap4j.core.PcapNativeException;
 import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.core.PcapNetworkInterface.PromiscuousMode;
 import org.pcap4j.packet.Packet;
+import org.pcap4j.packet.namednumber.Port;
 import org.pcap4j.packet.namednumber.TcpPort;
+import org.pcap4j.packet.namednumber.UdpPort;
 
 import com.hcye.myScanner.inter.PacketBuilder;
 import com.hcye.myScanner.packetBuilder.BuildSynpacket;
+import com.hcye.myScanner.packetBuilder.BuildUdpPacket;
 
 public class SendPacket {
 	private String dstIP="";
@@ -24,10 +27,11 @@ public class SendPacket {
 	private final String gateway;
 	private PacketBuilder builder=null;
 	private final PcapNetworkInterface nif;
-	private int[] tcpDstPorts=null;
-	private int[] udpDstPorts=null;
+	private int[] dstPorts=null;
 	private Object lock;
 	private int timeToRelay;
+	public static final String TCP="TCP";
+	public static final String UDP="UDP";
 	/**
 	 * 构造函数-》扫描ip
 	 * */
@@ -39,25 +43,13 @@ public class SendPacket {
 		this.lock=lock;
 	}
 	/**
-	 *  构造函数-》扫描tcp端口
+	 *  构造函数-》扫描端口
 	 * */
 	public SendPacket(PcapNetworkInterface nif,Set<String> SetDstIps,String gateway,int[] dstPorts,Object lock,int timeToRelay) {
 		this.nif=nif;
 		this.SetDstIps=SetDstIps;
 		this.gateway=gateway;
-		this.tcpDstPorts=dstPorts;
-		this.lock=lock;
-		this.timeToRelay=timeToRelay;
-	}
-	/**
-	 * 构造函数-》扫描udp端口
-	 * */
-	public SendPacket(PcapNetworkInterface nif,Set<String> SetDstIps,String gateway,PacketBuilder builder,int[] dstPorts,Object lock,int timeToRelay) {
-		this.nif=nif;
-		this.SetDstIps=SetDstIps;
-		this.gateway=gateway;
-		this.builder=builder;
-		this.udpDstPorts=dstPorts;
+		this.dstPorts=dstPorts;
 		this.lock=lock;
 		this.timeToRelay=timeToRelay;
 	}
@@ -100,29 +92,30 @@ public class SendPacket {
 	}
 	/**
 	 * 发送一个端口段的syn包去探测Ip
-	 * @throws InterruptedException 
+	 * 
 	 * 
 	 * */
-	public void sendSynForTcpPort() throws PcapNativeException, UnknownHostException, InterruptedException {
+	
+	public void sendPacketForPortScan(String PortType) throws Exception {
 		ThreadPoolExecutor pool=new ThreadPoolExecutor(100, 500, 5, TimeUnit.MILLISECONDS, new LinkedBlockingQueue());
-		if(tcpDstPorts==null) {
+		if(dstPorts==null) {
 			throw new RuntimeException("请选择含目标端口的构造函数");
 		}
 		String dstMac="";
 		PcapHandle sendHandler=nif.openLive(65536, PromiscuousMode.PROMISCUOUS, 10);
-		
 		/**
 		 * 
 		 * 判断是否在同一个网段，如果在同一个网段则每个ip都要解析mac地址，不在同一个网段则只需要解析网关mac地址。
 		 * 
 		 * */
+		
 		boolean flag=false;  //同一网段为true
 		for(String ip:SetDstIps) {
 			flag=Pcap4JTools.isDifferentVlan(ip, gateway);
 			break;
 		}
 		
-		if(flag) {   //移除本机ip
+		if(flag) {   //如果扫描同一网段，移除本机IP，不扫描本机
 			SetDstIps.remove(Pcap4JTools.getIpByNif(nif));
 		}
 		
@@ -130,7 +123,7 @@ public class SendPacket {
 			SendArpRequest arp =new SendArpRequest();
 			dstMac=arp.sendArp(gateway,nif);
 		}
-		TcpPort[] srcPorts=new TcpPort[5];
+		int[] srcPorts=new int[5];
 		
 		/**
 		 * 
@@ -139,7 +132,7 @@ public class SendPacket {
 		 * */
 		for(int j=0;j<5;j++) {
 			short shortDstPort= (short) (Math.random()*300+64800);
-			srcPorts[j]=TcpPort.getInstance(shortDstPort);
+			srcPorts[j]=shortDstPort;
 		}
 		
 		for(String ip:SetDstIps) {
@@ -153,8 +146,8 @@ public class SendPacket {
 					continue;
 				}
 			}
-			for(int j=tcpDstPorts[0];j<tcpDstPorts[1];j++) {
-				taskForPortScan t=new taskForPortScan(nif, ip, dstMac, sendHandler,j,srcPorts);
+			for(int j=dstPorts[0];j<=dstPorts[1];j++) {
+				
 				//-------------------------加入随机数，防止防火墙拦截-----------------------------
 				int r=(int) (Math.random()*timeToRelay);   
 				if(r==0) {
@@ -163,7 +156,8 @@ public class SendPacket {
 				if(j%r==0) {
 					Thread.sleep((long) (Math.random()*timeToRelay)/3);  //
 				}
-				pool.execute(t);
+				taskForPortSCan tfp=new taskForPortSCan(ip, dstMac,j,srcPorts,sendHandler,PortType);
+				pool.execute(tfp);
 			}
 			
 		}
@@ -182,24 +176,28 @@ public class SendPacket {
 		}
 		
 	}
-	private class taskForPortScan implements Runnable{
+	private class taskForPortSCan implements Runnable{
+
 		//PacketBuilder builder, PcapNetworkInterface nif, String dstip, String dstMac, PcapHandle sendHandle
 		private PacketBuilder builder;
-		private final PcapNetworkInterface nif;
 		private final String dstip;
 		private final String dstMac;
 		private PcapHandle sendHandle;
 		private final int dstPort;
-		private final TcpPort[] srcPorts;
-		public taskForPortScan(PcapNetworkInterface nif, String dstip, String dstMac, PcapHandle sendHandle,int dstPort,TcpPort[] srcPorts) {
+		private final int[] srcPorts;
+		public taskForPortSCan(String dstip, String dstMac,int dstPort,int[] srcPorts,PcapHandle sendHandle,String portType) throws Exception {
 			// TODO Auto-generated constructor stub
-			this.nif=nif;
 			this.dstip=dstip;
 			this.dstMac=dstMac;
-			this.sendHandle=sendHandle;
 			this.dstPort=dstPort;
 			this.srcPorts=srcPorts;
-			this.builder=new BuildSynpacket(nif, TcpPort.getInstance((short)dstPort), srcPorts[(int) (Math.random()*4)]);
+			this.sendHandle=sendHandle;
+			if(portType.equals(SendPacket.TCP)) {
+				this.builder=new BuildSynpacket(nif, dstPort,srcPorts[(int) (Math.random()*4)]);
+			}else if(portType.equals(SendPacket.UDP)) {
+				this.builder=new BuildUdpPacket(nif, dstPort,srcPorts[(int) (Math.random()*4)]);
+			}
+	
 		}
 		@Override
 		public void run() {
